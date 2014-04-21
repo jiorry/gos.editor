@@ -149,7 +149,7 @@
 		}
 	}
 
-	$.fn.gosEditor = function(buttons, options) {
+	$.fn.gosEditor = function(options, buttons) {
 		return this.each(function() {
 			var $this = $(this),
 				data = $this.data('gos.editor'),
