@@ -16,7 +16,7 @@ $.fn.gosEditor.defaultOptions = {
 	btnClass : 'btn btn-default gos-btn-sm',
 	//toolbarPosition: you can set toolbar in bottom.
 	toolbarPosition: 'top',						
-	maxWidth : 780,
+	maxWidth : 'none',
 	//class: addtional html class for gos.editor
 	class : '',
 	tabindex : 10,

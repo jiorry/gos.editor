@@ -12,7 +12,7 @@
 			}else{
 				h = h<0 ? parseInt($text.attr('rows')) * parseFloat($text.css('line-height')) : h;
 			}
-			var style = '<style>.btn.gos-btn-sm{padding: 2px 10px;}.gos-editor-container{position:relative;}.gos-editor-container.toolbar-bottom{margin-bottom:20px;}.gos-editor-container.menu-bottom .dropdown ul{border-top-style:solid;border-bottom-style:none;top:auto;bottom:12px;}.gos-editor-container.toolbar-bottom .editor-toolbar{z-index:10;margin-bottom: 3px;position: absolute;bottom: -27px;}.gos-editor-container.fullPage{position: fixed;background-color: #FFFFFF;height: 100%;width: 100%;z-index:90;left: 0;top:0;padding: 20px;}.gos-editor-container.fullPage>.editor-toolbar, .gos-editor-container.fullPage>.editor-parent{max-width:'+options.maxWidth+'px;margin-left:auto;margin-right:auto}.gos-editor-container.fullPage>.editor-parent{height: 100%;padding-bottom: 100px;}.gos-editor{overflow: auto;}.single{margin-right:3px}.dropdown {position: relative;}.dropdown:hover ul {display: block;}.dropdown ul{display: none;list-style-type: none;position:absolute;z-index:2;top:20px;right:-1px;left:-1px;border:1px solid #adadad;border-top-style:none;background:#ebebeb;overflow: hidden;padding:0;}.dropdown li:first-child{margin-top:5px;}.dropdown li a{color:inherit}.gos-placeholder{color:#999999;position:absolute;left:10px;top:10px;display:none}.empty>.gos-placeholder{display:block}.editor-parent{position:relative}</style>';
+			var style = '<style>.btn.gos-btn-sm{padding: 2px 10px;}.gos-editor-container{position:relative;max-width:'+options.maxWidth+'}.gos-editor-container.toolbar-bottom{margin-bottom:20px;}.gos-editor-container.menu-bottom .dropdown ul{border-top-style:solid;border-bottom-style:none;top:auto;bottom:12px;}.gos-editor-container.toolbar-bottom .editor-toolbar{z-index:10;margin-bottom: 3px;position: absolute;bottom: -27px;}.gos-editor-container.fullPage{position: fixed;background-color: #FFFFFF;height: 100%;width: 100%;z-index:90;left: 0;top:0;padding: 20px;}.gos-editor-container.fullPage>.editor-toolbar, .gos-editor-container.fullPage>.editor-parent{margin-left:auto;margin-right:auto;padding-left:30px;padding-right:30px;}.gos-editor-container.fullPage>.editor-parent{height: 100%;padding-bottom: 30px;}.gos-editor{overflow: auto;}.single{margin-right:3px}.dropdown {position: relative;}.dropdown:hover ul {display: block;}.dropdown ul{display: none;list-style-type: none;position:absolute;z-index:2;top:20px;right:-1px;left:-1px;border:1px solid #adadad;border-top-style:none;background:#ebebeb;overflow: hidden;padding:0;}.dropdown li:first-child{margin-top:5px;}.dropdown li a{color:inherit}.gos-placeholder{color:#999999;position:absolute;left:10px;top:10px;display:none}.empty>.gos-placeholder{display:block}.editor-parent{position:relative}.btn-group>a[data-command]:last-child{margin-right:3px;}</style>';
 
 			var toolbarPosition = '';
 			if(this.options.toolbarPosition=='bottom'){
@@ -86,7 +86,7 @@
 			var i,k,$group = '', $toolbar = $('<div class="editor-toolbar" style="margin-bottom:3px;"></div>'), arr;
 			for (i=0; i < data.length; i++) {
 				if($.isArray(data[i])){
-					$group = $('<div class="btn-group" style="margin-right:3px;"></div>');
+					$group = $('<div class="btn-group"></div>');
 					for (k = 0; k<data[i].length; k++) {
 						$group.append(this.buildButton(data[i][k]));
 					};
@@ -110,6 +110,10 @@
 				tagclass = item['class'] ? ' '+item['class'] : '',
 				ctype = 'command', drowdownItem;
 
+			if(this.options.disabledButtons.indexOf(item['cmd'])>-1){
+				return null;
+			}
+
 			if(item.dialog)
 				ctype = 'dialog';
 			else if(item.onClick)
@@ -117,14 +121,14 @@
 
 			switch(item.type){
 				case 'dropdown':
-					html = '<div data-command-group="'+item.cmd+'" class="'+btnClass+tagclass+' dropdown command-active'+single+'"'+(item.value?' data-value="'+item.value+'"': '')+'><span class="content">'+item.content+'</span> <span class="caret"></span><ul>';
+					html = '<div data-group="true" data-command="'+item.cmd+'" class="'+btnClass+tagclass+' dropdown command-active'+single+'"'+(item.value?' data-value="'+item.value+'"': '')+'><span class="content">'+item.content+'</span> <span class="caret"></span><ul>';
 
 					for (var i = item['dropdown'].length - 1; i >= 0; i--) {
 						drowdownItem = item['dropdown'][i];
 						tagclass = drowdownItem['class'] ? ' class="'+drowdownItem['class']+'" ' : '';
 						switch(item.cmd){
 							case 'foreColor':
-								html += '<li><a href="#"'+tagclass+' style="display:block;width:auto;height:16px;margin:3px;background-color:'+drowdownItem['value']+';" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'"></a></li>'
+								html += '<li><a href="#"'+tagclass+' style="display:block;width:auto;height:16px;margin:3px;background-color:'+drowdownItem['value']+';" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'" data-drowdown-item="true"></a></li>'
 								break;
 							default:
 								html += '<li><a href="#"'+tagclass+' style="margin-bottom:3px;" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'" data-drowdown-item="true">'+drowdownItem['content']+'</a></li>'
@@ -156,7 +160,11 @@
 				gos = new GosEditor();
 
 			buttons = buttons || $.fn.gosEditor.defaultButtons;
-			options = $.extend($.fn.gosEditor.defaultOptions, options);
+			var opts = {}
+			for(var o in $.fn.gosEditor.defaultOptions){
+				opts[o] = $.fn.gosEditor.defaultOptions[o]
+			}
+			options = $.extend(opts, options);
 			if (!data) 
 				$this.data('gos.editor', (data = gos.init(this, buttons, options)));
 		})
@@ -169,9 +177,10 @@
 	$.fn.gosEditor.defaultOptions = {
 		btnClass : 'btn btn-default gos-btn-sm',
 		toolbarPosition: 'top',
-		maxWidth : 780,
+		maxWidth : 'none',
 		class : '',
 		tabindex : 10,
+		disabledButtons : [],
 		autoHeight : false
 	}
 
@@ -183,14 +192,29 @@
 			],
 			onClick : function($editor, clas){
 				var $this = $(this),
-					$parent = $this.closest('div.dropdown')
+					$parent = $this.closest('div.dropdown'),
+					common = ['mode', 'fullPage', 'insertImage', 'createLink'],
+					setVisibleFunc = function(v){
+						$editor.find('a[data-command],div[data-command]').each(function(){
+							$thisSub = $(this);
+							if($thisSub.data('drowdown-item'))
+								return;
+							if(common.indexOf($thisSub.data('command'))>-1)
+								return;
+							if(v)
+								$thisSub.show();
+							else
+								$thisSub.hide();
+						})
+					};
+
 				if(parseInt($this.data('command-value'))===1){
 					$parent.data('command-value', 1)
-					$parent.siblings().show();
+					setVisibleFunc(true);
 					clas.textMode = 1;
 				}else{
 					$parent.data('command-value', '0')
-					$parent.siblings().hide().siblings('a.btn[data-command=fullPage]').show();
+					setVisibleFunc(false);
 					clas.textMode = 0;
 				}
 				$parent.find('span.content').text($this.text())
