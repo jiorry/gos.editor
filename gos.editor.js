@@ -1,22 +1,49 @@
 (function($) {
 	var GosEditor = function(){
-		this.init = function(el, buttons){
+		this.init = function(el, buttons, options){
 			this.target = el;
+			this.options = options;
+			this.textMode = 'rich';
 
 			var $text = $(el),
 				h = $text.height();
+			if(this.options.autoHeight){
+				h = -1;
+			}else{
+				h = h<0 ? parseInt($text.attr('rows')) * parseFloat($text.css('line-height')) : h;
+			}
+			var style = '<style>.btn.gos-btn-sm{padding: 2px 10px;}.gos-editor-container{position:relative;}.gos-editor-container.toolbar-bottom{margin-bottom:20px;}.gos-editor-container.menu-bottom .dropdown ul{border-top-style:solid;border-bottom-style:none;top:auto;bottom:12px;}.gos-editor-container.toolbar-bottom .editor-toolbar{z-index:10;margin-bottom: 3px;position: absolute;bottom: -27px;}.gos-editor-container.fullPage{position: fixed;background-color: #FFFFFF;height: 100%;width: 100%;z-index:90;left: 0;top:0;padding: 20px;}.gos-editor-container.fullPage>.editor-toolbar, .gos-editor-container.fullPage>.editor-parent{max-width:'+options.maxWidth+'px;margin-left:auto;margin-right:auto}.gos-editor-container.fullPage>.editor-parent{height: 100%;padding-bottom: 100px;}.gos-editor{overflow: auto;}.single{margin-right:3px}.dropdown {position: relative;}.dropdown:hover ul {display: block;}.dropdown ul{display: none;list-style-type: none;position:absolute;z-index:2;top:20px;right:-1px;left:-1px;border:1px solid #adadad;border-top-style:none;background:#ebebeb;overflow: hidden;padding:0;}.dropdown li:first-child{margin-top:5px;}.dropdown li a{color:inherit}.gos-placeholder{color:#999999;position:absolute;left:10px;top:10px;display:none}.empty>.gos-placeholder{display:block}.editor-parent{position:relative}</style>';
 
-			h = h<0 ? parseInt($text.attr('rows')) * parseFloat($text.css('line-height')) : h;
+			var toolbarPosition = '';
+			if(this.options.toolbarPosition=='bottom'){
+				toolbarPosition = ' toolbar-bottom'
+			}
+			this.$editor = $('<div class="gos-editor-container'+toolbarPosition+' '+this.options.class+'">'+style+'<div class="editor-parent clearfix empty"><div tabindex="'+this.options.tabindex+'" class="form-control gos-editor context" contenteditable="true" style="'+(h>0 ? ("height:"+h.toString()+"px"): '')+'"></div><div class="gos-placeholder"></div></div></div>');
 
-			this.options = {};
-			var style = '<style>.single{margin-right:3px}.foreColor {position: relative;}.foreColor:hover ul {display: block;}.foreColor ul{display: none;list-style-type: none;position:absolute;z-index:2;top:30px;right:-1px;left:-1px;border:1px solid #adadad;border-top:0;background:#ebebeb;overflow: hidden;padding:0;}.gos-placeholder{color:#999999;position:absolute;left:10px;top:10px;display:none}.empty>.gos-placeholder{display:block}.editor-parent{position:relative}</style>';
-			
-			this.$editor = $(style+'<div class="gos-editor-container"><div class="editor-toolbar" style="margin-bottom:3px;">' + this.buildToolbarHtml(buttons) + '</div><div class="editor-parent clearfix empty"><div class="form-control gos-editor" contenteditable="true" style="height:'+h.toString()+'px"></div><div class="gos-placeholder"></div></div></div>');
+			this.$editor.prepend(this.buildToolbar(buttons));
 
 			var thisClas = this;
-			this.$editor.find('div.editor-toolbar').on('click', '[data-editor-command]', function(e){
-				var $this = $(this);
-				thisClas.exec($this.data('editor-command'), $this.data('editor-command-value'));
+			this.$editor.find('div.editor-toolbar').on('click', 'a[data-command]', function(e){
+				var $this = $(this),
+					ctype = $this.data('command-type');
+
+				switch(ctype){
+					case 'onClick':
+						var option;
+						if($this.data('drowdown-item')){
+							option = $this.closest('div.dropdown').data('option')
+						}else{
+							option = $this.data('option');
+						}
+						if(option.onClick){
+							option.onClick.call(this, thisClas.$editor, thisClas)
+						}
+						break;
+					default:
+						thisClas.exec($this.data('command'), $this.data('command-value'));
+						break;
+				}
+
 			})
 			
 			$text.addClass('hidden').after(this.$editor)
@@ -29,14 +56,21 @@
 					$(this).parent().addClass('empty');
 				else
 					$(this).parent().removeClass('empty');
-			}).change(function(){
+
 				$text.val($(this).html());
+			}).keypress(function(){
+				
 			});
 		}
 
-		this.exec = function(action, value){
-			this.$editor.find('div.editor').focus();
+		this.copyToTextArea = function(){
+			this.$editor.prev().html(this.$editor.find('div[contenteditable]').html());
+		}
 
+		this.exec = function(action, value){
+			if($.fn.gosEditor.safeActions.indexOf(action)===-1)
+				return;
+			
 			if (this.state(action)) {
 				document.execCommand(action, false, null);
 			} else {
@@ -48,70 +82,122 @@
 			return document.queryCommandState(action) === true;
 		}
 
-		this.buildToolbarHtml = function(data){
-			var i,k,html = '',htmlDialog='', arr;
+		this.buildToolbar = function(data){
+			var i,k,$group = '', $toolbar = $('<div class="editor-toolbar" style="margin-bottom:3px;"></div>'), arr;
 			for (i=0; i < data.length; i++) {
 				if($.isArray(data[i])){
-					html += '<div class="btn-group" style="margin-right:3px;">';
+					$group = $('<div class="btn-group" style="margin-right:3px;"></div>');
 					for (k = 0; k<data[i].length; k++) {
-						arr = this.buildButton(data[i][k]);
-						html += arr[0];
-						htmlDialog += arr[1];
+						$group.append(this.buildButton(data[i][k]));
 					};
-					html += '</div>'
+					$toolbar.append($group);
+
 				}else{
-					arr = this.buildButton(data[i], true);
-					html += arr[0];
-					htmlDialog += arr[1];
+					$toolbar.append(this.buildButton(data[i], true));
 				}
 			};
-			return html + htmlDialog;
+			return $toolbar;
 		}
 
 		this.buildButton = function(item, lonly){
 			if(!item)
 				return '';
 
-			var html,htmlDialog='',
+			var html,$node,btnClass=this.options.btnClass,
+				cmd = item['cmd'] ? ' data-command="'+item['cmd']+'"' : '',
+				val = item['value'] ? ' data-command-value="'+String(item['value'])+'"' : '',
 				single = lonly ? ' single':'',
-				cmd = item['cmd'] ? ' data-editor-command="'+item['cmd']+'"' : '',
-				val = item['value'] ? ' data-editor-value="'+item['cmd']+'"' : '';
+				tagclass = item['class'] ? ' '+item['class'] : '',
+				ctype = 'command', drowdownItem;
 
-			switch(item['type']){
-				case 'foreColor':
-					html = '<div data-editor-command-group="foreColor" class="btn btn-default foreColor editor-command-active'+single+'"><i class="fa fa-font"></i> <span class="caret"></span><ul>';
+			if(item.dialog)
+				ctype = 'dialog';
+			else if(item.onClick)
+				ctype = 'onClick';
+
+			switch(item.type){
+				case 'dropdown':
+					html = '<div data-command-group="'+item.cmd+'" class="'+btnClass+tagclass+' dropdown command-active'+single+'"'+(item.value?' data-value="'+item.value+'"': '')+'><span class="content">'+item.content+'</span> <span class="caret"></span><ul>';
+
 					for (var i = item['dropdown'].length - 1; i >= 0; i--) {
-						item['dropdown'][i]
-						html += '<li><a  href="#" style="display:block;width:auto;height:16px;margin:3px;background-color:'+item['dropdown'][i]['value']+';" data-editor-command="'+item['dropdown'][i]['cmd']+'" data-editor-command-value="'+item['dropdown'][i]['value']+'"></a></li>'
+						drowdownItem = item['dropdown'][i];
+						tagclass = drowdownItem['class'] ? ' class="'+drowdownItem['class']+'" ' : '';
+						switch(item.cmd){
+							case 'foreColor':
+								html += '<li><a'+tagclass+' style="display:block;width:auto;height:16px;margin:3px;background-color:'+drowdownItem['value']+';" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'"></a></li>'
+								break;
+							default:
+								html += '<li><a'+tagclass+' style="margin-bottom:3px;" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'" data-drowdown-item="true">'+drowdownItem['content']+'</a></li>'
+								break;
+						}
 					};
 					html += '</ul></div>'
+					$node = $(html);
+
 					break;
 				default:
-					html = '<a href="#" class="btn btn-default"'+cmd+val+'>'+item['content']+'</a>';
-					if(item['dialog']){
-						htmlDialog += item['dialog'];
-					}
+					html = '<a class="'+btnClass+single+tagclass+'"'+cmd+val+' data-command-type="'+ctype+'">'+item['content']+'</a>';
+
+					$node = $(html);
 					break;
 			}
 
-			return [html, htmlDialog];
+			if(ctype!== 'command')
+				$node.data('option', item);
+
+			return $node;
 		}
 	}
 
-	$.fn.gosEditor = function() {
+	$.fn.gosEditor = function(buttons, options) {
 		return this.each(function() {
 			var $this = $(this),
 				data = $this.data('gos.editor'),
 				gos = new GosEditor();
 
+			buttons = buttons || $.fn.gosEditor.defaultButtons;
+			options = $.extend($.fn.gosEditor.defaultOptions, options);
 			if (!data) 
-				$this.data('gos.editor', (data = gos.init(this, $.fn.gosEditor.defaultButtons)));
+				$this.data('gos.editor', (data = gos.init(this, buttons, options)));
 		})
 	}
 
 	$.fn.gosEditor.Constructor = GosEditor;
 
+	$.fn.gosEditor.safeActions = ['bold', 'italic', 'underline', 'strikethrough', 'insertunorderedlist', 'insertorderedlist', 'blockquote', 'pre', 'foreColor'];
+
+	$.fn.gosEditor.defaultOptions = {
+		btnClass : 'btn btn-default gos-btn-sm',
+		toolbarPosition: 'top',
+		maxWidth : 780,
+		class : '',
+		tabindex : 10,
+		autoHeight : false
+	}
+
 	$.fn.gosEditor.defaultButtons = [
+		{cmd: 'mode', value:1, content:'Rich Text', type:'dropdown', 
+			dropdown : [
+				{cmd: 'mode', value: 1, content: 'Rich Text', class : 'hidden'},
+				{cmd: 'mode', value: 0, content: 'MarkDown '}
+			],
+			onClick : function($editor, clas){
+				var $this = $(this),
+					$parent = $this.closest('div.dropdown')
+				if(parseInt($this.data('command-value'))===1){
+					$parent.data('command-value', 1)
+					$parent.siblings().show();
+					clas.textMode = 1;
+				}else{
+					$parent.data('command-value', '0')
+					$parent.siblings().hide().siblings('a.btn[data-command=fullPage]').show();
+					clas.textMode = 0;
+				}
+				$parent.find('span.content').text($this.text())
+				$parent.find('.hidden').removeClass('hidden');
+				$this.addClass('hidden');
+			}
+		},
 		[	
 			{cmd: 'bold', content:'<i class="fa fa-bold"></i>'},
 			{cmd: 'italic', content:'<i class="fa fa-italic"></i>'}
@@ -123,7 +209,7 @@
 			{cmd: 'justifyRight', content:'<i class="fa fa-align-right"></i>'}
 		],
 		
-		{type: 'foreColor', content:'Color', dropdown : [
+		{cmd: 'foreColor', content:'<i class="fa fa-font"></i>', type:'dropdown', dropdown : [
 			{cmd: 'foreColor', value: 'black', content: '<span class="background-color:black">color</span>'}, 
 			{cmd: 'foreColor', value: 'silver', content: '<span class="background-color:silver">color</span>'}, 
 			{cmd: 'foreColor', value: 'gray', content: '<span class="background-color:gray">color</span>'}, 
@@ -152,7 +238,31 @@
 			{cmd: 'insertImage', content:'<i class="fa fa-picture-o"></i>'}
 		],
 
-		{cmd: 'fullPage', content:'<i class="fa fa-arrows-alt"></i>'}
+		{cmd: 'fullPage', value: 1, content:'<i class="fa fa-arrows-alt"></i>', onClick : function($editor, clas){
+			var $this = $(this);
+			if(parseInt($this.data('command-value'))===1){
+				$editor.addClass('fullPage');
+				$editor.removeClass('toolbar-bottom');
+
+				$this.data('command-value', '0');
+				$editor.find('div.gos-editor').css('height', '100%');
+			}else{
+				$editor.removeClass('fullPage')
+				if(clas.options.toolbarPosition && clas.options.toolbarPosition=='bottom'){
+					$editor.addClass('toolbar-bottom');
+				}
+				$this.data('command-value', '1');
+				
+				if(clas.options.autoHeight){
+					$editor.find('div.gos-editor').css('height', 'autho');
+				}else{
+					var $text = $editor.prev(),
+						h = $text.height();
+					h = h<0 ? parseInt($text.attr('rows')) * parseFloat($text.css('line-height')) : h;
+					$editor.find('div.gos-editor').css('height', h.toString()+'px');
+				}
+			}
+		}}
 	];
 
 	return null;
