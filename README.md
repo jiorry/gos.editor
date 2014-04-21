@@ -3,7 +3,7 @@ gos.editor
 
 gos.editor is a html5 wysiwyg editor
 
-![](http://github.com/jiorry/gos.js.editor/blob/master/gos.editor.png)
+![](https://raw.githubusercontent.com/jiorry/gos.js.editor/master/gos.editor.png)
 
 #### useage
 ```js
