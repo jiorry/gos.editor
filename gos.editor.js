@@ -124,10 +124,10 @@
 						tagclass = drowdownItem['class'] ? ' class="'+drowdownItem['class']+'" ' : '';
 						switch(item.cmd){
 							case 'foreColor':
-								html += '<li><a'+tagclass+' style="display:block;width:auto;height:16px;margin:3px;background-color:'+drowdownItem['value']+';" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'"></a></li>'
+								html += '<li><a href="#"'+tagclass+' style="display:block;width:auto;height:16px;margin:3px;background-color:'+drowdownItem['value']+';" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'"></a></li>'
 								break;
 							default:
-								html += '<li><a'+tagclass+' style="margin-bottom:3px;" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'" data-drowdown-item="true">'+drowdownItem['content']+'</a></li>'
+								html += '<li><a href="#"'+tagclass+' style="margin-bottom:3px;" data-command="'+drowdownItem['cmd']+'" data-command-value="'+drowdownItem['value']+'" data-command-type="'+ctype+'" data-drowdown-item="true">'+drowdownItem['content']+'</a></li>'
 								break;
 						}
 					};
@@ -136,7 +136,7 @@
 
 					break;
 				default:
-					html = '<a class="'+btnClass+single+tagclass+'"'+cmd+val+' data-command-type="'+ctype+'">'+item['content']+'</a>';
+					html = '<a href="#" class="'+btnClass+single+tagclass+'"'+cmd+val+' data-command-type="'+ctype+'">'+item['content']+'</a>';
 
 					$node = $(html);
 					break;
