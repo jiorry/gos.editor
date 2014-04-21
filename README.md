@@ -12,11 +12,15 @@ $('.editor').gosEditor({autoHeight:true, toolbarPosition:'bottom'});
 
 ```js
 $.fn.gosEditor.defaultOptions = {
-	btnClass : 'btn btn-default gos-btn-sm', 	//you can get larger button when without gos-btn-sm class.
+	//btnClass: you can get larger button when you remove gos-btn-sm class.
+	btnClass : 'btn btn-default gos-btn-sm',
+	//toolbarPosition: you can set toolbar in bottom.
 	toolbarPosition: 'top',						
 	maxWidth : 780,
+	//class: addtional html class for gos.editor
 	class : '',
 	tabindex : 10,
-	autoHeight : false			//editor will auto grow when text input
+	//autoHeight: editor will auto grow when text input
+	autoHeight : false
 }
 ```
